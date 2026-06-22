@@ -39,6 +39,8 @@
   ::-webkit-scrollbar{width:10px;height:10px;}
   ::-webkit-scrollbar-thumb{background:#ffcf6b;border:2px solid #241830;}
   ::-webkit-scrollbar-track{background:#241830;}
+  /* visible focus ring for keyboard users (mouse/touch unaffected) */
+  button:focus-visible{outline:3px solid #9be89b;outline-offset:2px;}
   /* keep controls clear of mobile browser chrome / notches */
   [data-pad]{bottom:calc(16px + env(safe-area-inset-bottom))!important;right:calc(16px + env(safe-area-inset-right))!important;}
   [data-hint]{left:calc(16px + env(safe-area-inset-left))!important;bottom:calc(16px + env(safe-area-inset-bottom))!important;}
@@ -82,8 +84,8 @@
     </div>
     <div data-nav style="pointer-events:auto;display:none;flex-wrap:wrap;gap:6px;justify-content:center;max-width:44vw;"></div>
     <div style="pointer-events:auto;display:flex;gap:8px;flex-shrink:0;">
-      <button data-btn="theme" title="Time of day" style="font-family:'Press Start 2P';font-size:13px;background:#1c1228e0;color:#ffcf6b;border:3px solid #ffcf6b;border-radius:3px;padding:9px 11px;cursor:pointer;box-shadow:0 4px 0 #0006;">☀</button>
-      <button data-btn="mute" title="Sound" style="font-family:'Press Start 2P';font-size:13px;background:#1c1228e0;color:#ffcf6b;border:3px solid #ffcf6b;border-radius:3px;padding:9px 11px;cursor:pointer;box-shadow:0 4px 0 #0006;">♪</button>
+      <button data-btn="theme" title="Time of day" aria-label="Cycle time of day (dusk / night / day)" style="font-family:'Press Start 2P';font-size:13px;background:#1c1228e0;color:#ffcf6b;border:3px solid #ffcf6b;border-radius:3px;padding:9px 11px;cursor:pointer;box-shadow:0 4px 0 #0006;">☀</button>
+      <button data-btn="mute" title="Sound" aria-label="Toggle sound" style="font-family:'Press Start 2P';font-size:13px;background:#1c1228e0;color:#ffcf6b;border:3px solid #ffcf6b;border-radius:3px;padding:9px 11px;cursor:pointer;box-shadow:0 4px 0 #0006;">♪</button>
       <button data-btn="read" style="font-family:'Press Start 2P';font-size:11px;background:#ffcf6b;color:#241830;border:3px solid #241830;border-radius:3px;padding:9px 11px;cursor:pointer;box-shadow:0 4px 0 #0006;">RESUME</button>
     </div>
   </div>
@@ -106,12 +108,12 @@
   <!-- mobile controls -->
   <div data-pad style="position:absolute;right:16px;bottom:16px;z-index:40;display:flex;align-items:flex-end;gap:10px;">
     <div style="display:flex;gap:8px;">
-      <button data-pad-btn="left" style="width:58px;height:58px;font-size:22px;font-family:'Press Start 2P';background:#1c1228d0;color:#ffcf6b;border:3px solid #ffcf6b;border-radius:6px;box-shadow:0 4px 0 #0006;cursor:pointer;touch-action:none;">◀</button>
-      <button data-pad-btn="right" style="width:58px;height:58px;font-size:22px;font-family:'Press Start 2P';background:#1c1228d0;color:#ffcf6b;border:3px solid #ffcf6b;border-radius:6px;box-shadow:0 4px 0 #0006;cursor:pointer;touch-action:none;">▶</button>
+      <button data-pad-btn="left" aria-label="Walk left" style="width:58px;height:58px;font-size:22px;font-family:'Press Start 2P';background:#1c1228d0;color:#ffcf6b;border:3px solid #ffcf6b;border-radius:6px;box-shadow:0 4px 0 #0006;cursor:pointer;touch-action:none;">◀</button>
+      <button data-pad-btn="right" aria-label="Walk right" style="width:58px;height:58px;font-size:22px;font-family:'Press Start 2P';background:#1c1228d0;color:#ffcf6b;border:3px solid #ffcf6b;border-radius:6px;box-shadow:0 4px 0 #0006;cursor:pointer;touch-action:none;">▶</button>
     </div>
     <div style="display:flex;gap:8px;">
-      <button data-pad-btn="jump" style="width:58px;height:58px;font-size:11px;font-family:'Press Start 2P';background:#1c1228d0;color:#9be89b;border:3px solid #9be89b;border-radius:50%;box-shadow:0 4px 0 #0006;cursor:pointer;touch-action:none;">JMP</button>
-      <button data-pad-btn="act" style="width:64px;height:64px;font-size:13px;font-family:'Press Start 2P';background:#ffcf6b;color:#241830;border:3px solid #241830;border-radius:50%;box-shadow:0 4px 0 #0006;cursor:pointer;touch-action:none;">A</button>
+      <button data-pad-btn="jump" aria-label="Jump" style="width:58px;height:58px;font-size:11px;font-family:'Press Start 2P';background:#1c1228d0;color:#9be89b;border:3px solid #9be89b;border-radius:50%;box-shadow:0 4px 0 #0006;cursor:pointer;touch-action:none;">JMP</button>
+      <button data-pad-btn="act" aria-label="Interact" style="width:64px;height:64px;font-size:13px;font-family:'Press Start 2P';background:#ffcf6b;color:#241830;border:3px solid #241830;border-radius:50%;box-shadow:0 4px 0 #0006;cursor:pointer;touch-action:none;">A</button>
     </div>
   </div>
 
@@ -197,12 +199,16 @@
 
 <script>
 class Game {
-  constructor(root){ this.root = root; this.init(); }
+  constructor(root){ this.root = root; this.loop = this.loop.bind(this); this.init(); }
 
   q(s){ return this.root.querySelector(s); }
   qa(s){ return Array.from(this.root.querySelectorAll(s)); }
   store(k){ return this.root.querySelector('[data-store] [data-key="'+k+'"]'); }
   el(tag, css, html){ const e=document.createElement(tag); if(css)e.style.cssText=css; if(html!=null)e.innerHTML=html; return e; }
+  load(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  save(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  zoneFromHash(){ const h=(location.hash||'').replace('#','').toLowerCase(); const map={home:0,skills:1,experience:2,projects:3,about:4,education:4,contact:5}; return (h in map)?map[h]:null; }
+  setHash(zi){ const slug=['home','skills','experience','projects','about','contact'][zi]; if(!slug)return; try{ if(location.hash!=='#'+slug) history.replaceState(null,'','#'+slug); }catch(e){} }
 
   init(){
     if(this._init) return; this._init = true;
@@ -212,6 +218,10 @@ class Game {
     this.keys = {}; this.touch = {}; this.paused = true; this.started = false;
     this.active = null; this.autoTarget = null; this.muted = true; this.theme = 0;
     this.themes = ['dusk','night','day']; this._biome = 0;
+    // restore visitor preferences (autoplay stays blocked until the first gesture)
+    this._mutePref = this.load('pq_muted'); // '0' = wants sound
+    const st = parseInt(this.load('pq_theme'),10); if(st>=0 && st<3) this.theme = st;
+    this._deepLink = this.zoneFromHash(); // pending fast-travel target from the URL hash
     this.S = 1; this.applyScale();
 
     this.BUILDINGS = [
@@ -581,7 +591,7 @@ class Game {
       const cx=Math.max(0,Math.min(this.worldW-this.vw,this.posX+this.charW/2-this.vw/2));
       this.cameraX=cx; this.applyCamera(cx); this.cullView(cx);
       this.charWrap.style.transition='none'; this.charWrap.style.left=this.posX+'px'; this.charWrap.style.bottom=(this.G+this.y)+'px';
-      this._zone=zi; this.q('[data-zonelabel]').textContent=this.ZLABELS[zi]; this.applyBiome(zi); this.announceZone(this.ZBANNER[zi]);
+      this._zone=zi; this.q('[data-zonelabel]').textContent=this.ZLABELS[zi]; this.applyBiome(zi); this.announceZone(this.ZBANNER[zi]); this.setHash(zi);
       this.navBtns.forEach((b,i)=>{ b.style.background=i===zi?'#ffcf6b':'#1c1228cc'; b.style.color=i===zi?'#241830':'#ffe9c2'; b.style.borderColor=i===zi?'#241830':'#ffcf6b66'; });
       p1.remove();
       this._p2=this.makeTravelPortal(targetCx,this.G+this.charH+320); world.appendChild(this._p2);
@@ -710,7 +720,7 @@ class Game {
     this.q('[data-pad-btn="jump"]').addEventListener('pointerdown',e=>{e.preventDefault(); if(!this.started)this.startGame(); this.jump();});
     this.q('[data-pad-btn="act"]').addEventListener('pointerdown',e=>{e.preventDefault(); if(!this.started)this.startGame(); if(this.anyOpen())this.closeAll(); else this.interact();});
     this.q('[data-btn="mute"]').addEventListener('click',()=>this.toggleMute());
-    this.q('[data-btn="theme"]').addEventListener('click',()=>{ this.theme=(this.theme+1)%3; this.applyTheme(); this.sfx('zone'); });
+    this.q('[data-btn="theme"]').addEventListener('click',()=>{ this.theme=(this.theme+1)%3; this.applyTheme(); this.save('pq_theme',this.theme); this.sfx('zone'); });
     this.q('[data-btn="read"]').addEventListener('click',()=>{ if(!this.started)this.startGame(); this.openRead(); });
     this.q('[data-btn="skills"]').addEventListener('click',()=>{ if(!this.started)this.startGame(); if(this.q('[data-skills]').style.display==='block') this.closeSkills(); else { this.closeAll(); this.openSkills(); } });
     this.q('[data-dlg-close]').addEventListener('click',()=>this.closeDialog());
@@ -719,11 +729,19 @@ class Game {
     const onResize=()=>{ this.applyScale(); this._onResize(); };
     window.addEventListener('resize',onResize);
     window.addEventListener('orientationchange',onResize);
+    // pause audio when the tab is backgrounded; resume on return
+    document.addEventListener('visibilitychange',()=>{ if(!this.ac)return; if(document.hidden){ this.stopMusic(); if(this.ac.suspend)this.ac.suspend(); } else { if(this.ac.resume)this.ac.resume(); if(!this.muted)this.startMusic(); } });
+    // shareable deep links: respond to manual hash edits / links opened in this tab
+    window.addEventListener('hashchange',()=>{ const zi=this.zoneFromHash(); if(zi!=null && this.started && !this._traveling && zi!==this._zone){ this.portalTravel(this.ZONES[zi][1],zi); } });
   }
 
   jump(){ if(this.paused)return; if(this.onGround){ this.vy=15; this.onGround=false; this.sfx('jump'); } }
   interact(){ if(this.paused)return; if(this.active) this.openByKey(this.active.key); }
-  startGame(){ if(this.started)return; this.started=true; this.paused=false; this.q('[data-start]').style.display='none'; this.reflectMute(); this.showAudioHint(); }
+  startGame(){ if(this.started)return; this.started=true; this.paused=false; this.q('[data-start]').style.display='none';
+    if(this._mutePref==='0'){ this.muted=false; this.initAudio(); } // visitor previously chose sound; this gesture allows it
+    this.reflectMute(); if(this.muted) this.showAudioHint();
+    if(this._deepLink!=null){ const zi=this._deepLink; this._deepLink=null; setTimeout(()=>this.portalTravel(this.ZONES[zi][1],zi),360); }
+  }
   reflectMute(){ const b=this.q('[data-btn="mute"]'); if(!b)return; b.textContent=this.muted?'✕':'♪'; b.style.color=this.muted?'#ff8a6e':'#ffcf6b'; b.style.borderColor=this.muted?'#ff8a6e':'#ffcf6b'; }
   showAudioHint(){ const h=this.q('[data-audiohint]'); if(!h)return; setTimeout(()=>{ h.style.opacity='1'; h.style.transform='translateY(0)'; },420); setTimeout(()=>{ h.style.opacity='0'; h.style.transform='translateY(-8px)'; },3600); }
 
@@ -762,16 +780,23 @@ class Game {
         87,X,87,131,87,X,65,X, 87,X,87,131,87,X,98,X
       ];
       this.DRM=['K','h','H','h','S','h','H','h','K','h','K','h','S','h','H','h'];
-      let i=0;
-      this.musicTimer=setInterval(()=>{ if(!this.ac)return; const t=this.ac.currentTime+0.02; const L=this.LEAD.length;
-        const m=this.LEAD[i%L]; if(m) this.tone(m,0.16,'square',0.5,this.leadG,t);
-        const a=this.ARP[i%L]; if(a&&(i%2===0)) this.tone(a,0.07,'square',0.4,this.arpG,t);
-        const b=this.BASS[i%L]; if(b) this.tone(b,0.2,'triangle',0.7,this.bassG,t);
-        this.drum(this.DRM[i%16],t);
-        i++;
-      },132);
+      this._step=0; this._nextNoteTime=this.ac.currentTime+0.1;
+      if(!this.muted) this.startMusic();
     }catch(e){}
   }
+  // Web Audio lookahead scheduler: a 25ms timer queues notes ~120ms ahead so
+  // playback stays glitch-free even when the main thread is busy (no setInterval drift).
+  scheduleStep(i,t){ const L=this.LEAD.length;
+    const m=this.LEAD[i%L]; if(m) this.tone(m,0.16,'square',0.5,this.leadG,t);
+    const a=this.ARP[i%L]; if(a&&(i%2===0)) this.tone(a,0.07,'square',0.4,this.arpG,t);
+    const b=this.BASS[i%L]; if(b) this.tone(b,0.2,'triangle',0.7,this.bassG,t);
+    this.drum(this.DRM[i%16],t);
+  }
+  startMusic(){ if(!this.ac||this.musicTimer)return; const spb=0.132; // seconds per 16th note (~115 BPM)
+    if(this._nextNoteTime<this.ac.currentTime) this._nextNoteTime=this.ac.currentTime+0.06;
+    this.musicTimer=setInterval(()=>{ if(!this.ac)return; while(this._nextNoteTime < this.ac.currentTime+0.12){ this.scheduleStep(this._step,this._nextNoteTime); this._step++; this._nextNoteTime+=spb; } },25);
+  }
+  stopMusic(){ if(this.musicTimer){ clearInterval(this.musicTimer); this.musicTimer=null; } }
   drum(kind,t){ if(!this.ac||!kind)return;
     if(kind==='K'){ const o=this.ac.createOscillator(),g=this.ac.createGain(); o.type='sine'; o.frequency.setValueAtTime(150,t); o.frequency.exponentialRampToValueAtTime(48,t+0.12); g.gain.setValueAtTime(0.9,t); g.gain.exponentialRampToValueAtTime(0.0001,t+0.14); o.connect(g); g.connect(this.drumG); o.start(t); o.stop(t+0.16); return; }
     const s=this.ac.createBufferSource(); s.buffer=this.noiseBuf; const f=this.ac.createBiquadFilter(); const g=this.ac.createGain();
@@ -781,7 +806,11 @@ class Game {
   }
   tone(freq,dur,type,vol,dest,when){ if(!this.ac)return; const o=this.ac.createOscillator(),g=this.ac.createGain(); o.type=type; o.frequency.value=freq; const t=when||this.ac.currentTime; g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(vol,t+0.012); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g); g.connect(dest||this.sfxG); o.start(t); o.stop(t+dur+0.02); }
   sfx(kind){ if(!this.ac||this.muted)return; const t=this.ac.currentTime; if(kind==='open'){ [523,659,784].forEach((f,i)=>this.tone(f,0.12,'square',0.4,this.sfxG,t+i*0.06)); } else if(kind==='jump'){ this.tone(330,0.08,'square',0.35,this.sfxG,t); this.tone(560,0.1,'square',0.3,this.sfxG,t+0.05);} else if(kind==='step'){ this.tone(120+Math.random()*30,0.05,'square',0.12,this.sfxG,t);} else if(kind==='zone'){ this.tone(660,0.1,'triangle',0.4,this.sfxG,t); this.tone(880,0.14,'triangle',0.35,this.sfxG,t+0.08);} else if(kind==='type'){ this.tone(1180+Math.random()*120,0.03,'square',0.16,this.sfxG,t);} else if(kind==='portal'){ for(let n=0;n<8;n++){ this.tone(300+n*90,0.4,'sawtooth',0.18,this.sfxG,t+n*0.05);} this.tone(160,0.6,'triangle',0.4,this.sfxG,t);} else if(kind==='whoosh'){ for(let n=0;n<10;n++){ this.tone(900-n*70,0.06,'sawtooth',0.16,this.sfxG,t+n*0.022);} } else if(kind==='land'){ this.tone(180,0.12,'square',0.4,this.sfxG,t); this.tone(90,0.2,'triangle',0.5,this.sfxG,t); [784,1046].forEach((f,i)=>this.tone(f,0.1,'square',0.3,this.sfxG,t+0.08+i*0.06)); } }
-  toggleMute(){ this.muted=!this.muted; if(!this.muted && !this.ac) this.initAudio(); if(this.master)this.master.gain.value=this.muted?0:0.7; this.reflectMute(); }
+  toggleMute(){ this.muted=!this.muted;
+    if(!this.muted){ if(!this.ac) this.initAudio(); else { if(this.ac.resume)this.ac.resume(); this.startMusic(); } }
+    else this.stopMusic();
+    if(this.master)this.master.gain.value=this.muted?0:0.7;
+    this.save('pq_muted',this.muted?'1':'0'); this.reflectMute(); }
 
   drawChar(frame,lift){
     lift=lift||0;
@@ -857,19 +886,23 @@ class Game {
       const target=Math.max(0,Math.min(this.worldW-this.vw,this.posX+this.charW/2-this.vw/2));
       this.cameraX+=(target-this.cameraX)*Math.min(1,0.12*dt);
       const cx=this.cameraX;
-      this.elWorld.style.transform='translateX('+(-cx)+'px)';
-      this.elNear.style.transform='translateX('+(-cx*0.55)+'px)';
-      this.elFar.style.transform='translateX('+(-cx*0.3)+'px)';
-      this.elSky.style.transform='translateX('+(-cx*0.12)+'px)';
-      this.cullView(cx);
+      // parallax + culling only need rewriting when the camera actually moved
+      if(this._lastCx===undefined||Math.abs(cx-this._lastCx)>0.05){
+        this._lastCx=cx;
+        this.elWorld.style.transform='translateX('+(-cx)+'px)';
+        this.elNear.style.transform='translateX('+(-cx*0.55)+'px)';
+        this.elFar.style.transform='translateX('+(-cx*0.3)+'px)';
+        this.elSky.style.transform='translateX('+(-cx*0.12)+'px)';
+        this.cullView(cx);
+      }
       this.clouds.forEach(c=>{ let x=parseFloat(c.dataset.x)+(parseFloat(c.dataset.spd)*0.02*dt); if(x>120)x=-15; c.dataset.x=x; c.style.left=x+'%'; });
       const ccx=this.posX+this.charW/2;
       let best=null,bd=1e9; this.objects.forEach(o=>{ const d=Math.abs(o.cx-ccx); if(d<o.range&&d<bd){ bd=d; best=o; } });
       if(best!==this.active){ if(this.active)this.active.prompt.style.display='none'; this.active=best; if(best)best.prompt.style.display='block'; }
       let zi=0,zd=1e9; this.ZONES.forEach((z,i)=>{ const d=Math.abs(z[1]-ccx); if(d<zd){zd=d;zi=i;} });
-      if(zi!==this._zone){ this._zone=zi; this.sfx('zone'); this.q('[data-zonelabel]').textContent=this.ZLABELS[zi]; this.announceZone(this.ZBANNER[zi]); this.applyBiome(zi); this.navBtns.forEach((b,i)=>{ b.style.background=i===zi?'#ffcf6b':'#1c1228cc'; b.style.color=i===zi?'#241830':'#ffe9c2'; b.style.borderColor=i===zi?'#241830':'#ffcf6b66'; }); }
+      if(zi!==this._zone){ this._zone=zi; this.sfx('zone'); this.q('[data-zonelabel]').textContent=this.ZLABELS[zi]; this.announceZone(this.ZBANNER[zi]); this.applyBiome(zi); this.setHash(zi); this.navBtns.forEach((b,i)=>{ b.style.background=i===zi?'#ffcf6b':'#1c1228cc'; b.style.color=i===zi?'#241830':'#ffe9c2'; b.style.borderColor=i===zi?'#241830':'#ffcf6b66'; }); }
     }
-    this._raf=requestAnimationFrame(this.loop.bind(this));
+    this._raf=requestAnimationFrame(this.loop);
   }
 }
 
