@@ -234,6 +234,10 @@ class Game {
     ];
     this.objects = [];
 
+    // cache per-frame layer lookups (avoids 4 querySelector calls every frame)
+    this.elWorld=this.q('[data-world]'); this.elNear=this.q('[data-layer="near"]');
+    this.elFar=this.q('[data-layer="far"]'); this.elSky=this.q('[data-layer="sky"]');
+
     this.buildSky();
     this.buildWorld();
     this.buildNav();
@@ -349,6 +353,15 @@ class Game {
     this.canvas.width=this.charW*2; this.canvas.height=this.charH*2; this.cctx=this.canvas.getContext('2d');
     this.charInner.appendChild(this.canvas); this.charWrap.appendChild(this.charInner); w.appendChild(this.charWrap);
     this.drawChar(0);
+
+    // ---- viewport culling: hide offscreen world objects so the browser
+    // stops compositing/animating the ~95% of the world that isn't visible ----
+    this.cull = [];
+    Array.from(w.children).forEach(el=>{
+      if(el===this.charWrap||el===this.ground) return; // hero + full-width ground always live
+      const x0=el.offsetLeft, x1=x0+el.offsetWidth;
+      this.cull.push({el,x0,x1,shown:true});
+    });
   }
 
   makeTree(w,x,r){
@@ -491,6 +504,7 @@ class Game {
     const nav=this.q('[data-nav]'); nav.style.display='flex'; this.navBtns=[];
     this.ZONES.forEach((z,i)=>{ const b=this.el('button','font-family:\'Press Start 2P\';font-size:8px;background:#1c1228cc;color:#ffe9c2;border:2px solid #ffcf6b66;border-radius:2px;padding:7px 8px;cursor:pointer;',z[0]); b.addEventListener('click',()=>{ if(!this.started)this.startGame(); this.portalTravel(z[1],i); }); nav.appendChild(b); this.navBtns.push(b); });
   }
+  cullView(cx){ const vMin=cx-220, vMax=cx+this.vw+220, cull=this.cull; if(!cull)return; for(let i=0;i<cull.length;i++){ const o=cull[i]; const vis=o.x1>vMin&&o.x0<vMax; if(vis!==o.shown){ o.shown=vis; o.el.style.display=vis?'':'none'; } } }
   applyCamera(cx){
     this.q('[data-world]').style.transform='translateX('+(-cx)+'px)';
     this.q('[data-layer="near"]').style.transform='translateX('+(-cx*0.55)+'px)';
@@ -535,7 +549,7 @@ class Game {
       this.posX=Math.max(40,Math.min(this.worldW-this.charW-40,targetCx-this.charW/2));
       this.y=360; this.onGround=false; this.facing=1;
       const cx=Math.max(0,Math.min(this.worldW-this.vw,this.posX+this.charW/2-this.vw/2));
-      this.cameraX=cx; this.applyCamera(cx);
+      this.cameraX=cx; this.applyCamera(cx); this.cullView(cx);
       this.charWrap.style.transition='none'; this.charWrap.style.left=this.posX+'px'; this.charWrap.style.bottom=(this.G+this.y)+'px';
       this._zone=zi; this.q('[data-zonelabel]').textContent=this.ZLABELS[zi]; this.applyBiome(zi); this.announceZone(this.ZBANNER[zi]);
       this.navBtns.forEach((b,i)=>{ b.style.background=i===zi?'#ffcf6b':'#1c1228cc'; b.style.color=i===zi?'#241830':'#ffe9c2'; b.style.borderColor=i===zi?'#241830':'#ffcf6b66'; });
@@ -811,10 +825,11 @@ class Game {
       const target=Math.max(0,Math.min(this.worldW-this.vw,this.posX+this.charW/2-this.vw/2));
       this.cameraX+=(target-this.cameraX)*Math.min(1,0.12*dt);
       const cx=this.cameraX;
-      this.q('[data-world]').style.transform='translateX('+(-cx)+'px)';
-      this.q('[data-layer="near"]').style.transform='translateX('+(-cx*0.55)+'px)';
-      this.q('[data-layer="far"]').style.transform='translateX('+(-cx*0.3)+'px)';
-      this.q('[data-layer="sky"]').style.transform='translateX('+(-cx*0.12)+'px)';
+      this.elWorld.style.transform='translateX('+(-cx)+'px)';
+      this.elNear.style.transform='translateX('+(-cx*0.55)+'px)';
+      this.elFar.style.transform='translateX('+(-cx*0.3)+'px)';
+      this.elSky.style.transform='translateX('+(-cx*0.12)+'px)';
+      this.cullView(cx);
       this.clouds.forEach(c=>{ let x=parseFloat(c.dataset.x)+(parseFloat(c.dataset.spd)*0.02*dt); if(x>120)x=-15; c.dataset.x=x; c.style.left=x+'%'; });
       const ccx=this.posX+this.charW/2;
       let best=null,bd=1e9; this.objects.forEach(o=>{ const d=Math.abs(o.cx-ccx); if(d<o.range&&d<bd){ bd=d; best=o; } });
