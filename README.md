@@ -9,6 +9,15 @@ Features:
 - In-world dialogs, an RPG character-skills sheet, and a clean **Resume** read-mode
 - Fast-travel "rift" portal between zones, a day/dusk/night toggle, and synthesized chiptune audio (muted by default)
 - Mobile touch controls; fully self-contained in a single `index.html` (only external dependency is Google Fonts)
+- Shareable deep links — append `#skills`, `#experience`, `#projects`, `#about`, or `#contact` to jump straight to a zone
+- Remembers your theme and sound choice between visits
+
+## Performance
+
+The scene auto-detects a performance tier. On phones and low-end GPUs it runs a **lite** mode that drops the costliest full-screen blend/filter effects (CRT scanlines, biome tint, hill filters) and thins decoration, keeping movement smooth; desktops get the full effect set. Force a tier with a query param:
+
+- `?perf=hi` — full effects everywhere
+- `?perf=lite` — lite mode everywhere
 
 ## Controls
 

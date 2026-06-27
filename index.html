@@ -72,7 +72,7 @@
   <div data-flash style="position:absolute;inset:0;z-index:45;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 55%,#ffffff,#cfe8ff 45%,#9a8aff 100%);"></div>
 
   <!-- CRT overlay -->
-  <div style="position:absolute;inset:0;pointer-events:none;z-index:24;mix-blend-mode:overlay;opacity:.5;background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,0,0,.35) 3px,rgba(0,0,0,0) 4px);"></div>
+  <div data-crt style="position:absolute;inset:0;pointer-events:none;z-index:24;mix-blend-mode:overlay;opacity:.5;background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,0,0,.35) 3px,rgba(0,0,0,0) 4px);"></div>
   <div style="position:absolute;inset:0;pointer-events:none;z-index:24;background:radial-gradient(120% 120% at 50% 50%,rgba(0,0,0,0) 60%,rgba(20,8,30,.55) 100%);"></div>
 
   <!-- HUD -->
@@ -222,6 +222,15 @@ class Game {
     this._mutePref = this.load('pq_muted'); // '0' = wants sound
     const st = parseInt(this.load('pq_theme'),10); if(st>=0 && st<3) this.theme = st;
     this._deepLink = this.zoneFromHash(); // pending fast-travel target from the URL hash
+    // performance tier — "lite" disables the costly full-screen blend/filter
+    // effects and thins decoration on phones / low-end GPUs (override with ?perf=hi|lite)
+    const pf=(new URLSearchParams(location.search)).get('perf');
+    this.lite = pf==='lite' ? true : pf==='hi' ? false :
+      ( (window.matchMedia && matchMedia('(max-width:900px)').matches) ||
+        (navigator.hardwareConcurrency||8)<=4 ||
+        (navigator.deviceMemory||8)<=4 ||
+        /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent||'') );
+    if(this.lite) this.applyLite();
     this.S = 1; this.applyScale();
 
     this.BUILDINGS = [
@@ -286,16 +295,16 @@ class Game {
     sky.appendChild(this.haze);
     // distant soft cloud banks (atmospheric depth, behind main clouds)
     const dk=this.rng(88);
-    for(let i=0;i<6;i++){ const bw=240+dk()*260, bh=22+dk()*26; const bank=this.el('div','position:absolute;left:'+(dk()*125-12)+'%;top:'+(7+dk()*42)+'%;width:'+bw+'px;height:'+bh+'px;border-radius:'+bh+'px;background:linear-gradient(#ffffff,#e3d6f0);opacity:'+(0.1+dk()*0.16)+';filter:blur(3px);pointer-events:none;'); sky.appendChild(bank); }
+    for(let i=0;i<(this.lite?3:6);i++){ const bw=240+dk()*260, bh=22+dk()*26; const bank=this.el('div','position:absolute;left:'+(dk()*125-12)+'%;top:'+(7+dk()*42)+'%;width:'+bw+'px;height:'+bh+'px;border-radius:'+bh+'px;background:linear-gradient(#ffffff,#e3d6f0);opacity:'+(0.1+dk()*0.16)+';filter:blur(3px);pointer-events:none;'); sky.appendChild(bank); }
     this.clouds=[]; const cr=this.rng(21);
     for(let i=0;i<7;i++){ const c=this.makeCloud(); c.style.left=(cr()*125-12)+'%'; c.style.top=(5+cr()*33)+'%'; const sc=.55+cr()*0.95; c.style.transform='scale('+sc+')'; c.style.opacity=(0.72+cr()*0.28); c.dataset.spd=(0.12+cr()*0.4); c.dataset.x=parseFloat(c.style.left); sky.appendChild(c); this.clouds.push(c); }
     const br=this.rng(33);
-    for(let i=0;i<4;i++){ const top=(9+br()*30),dur=(32+br()*26),del=(-br()*44),sc=.6+br()*.7; const b=this.el('div','position:absolute;left:0;top:'+top+'%;transform:translateX(-12vw) scale('+sc+');animation:birdFly '+dur+'s linear infinite;animation-delay:'+del+'s;pointer-events:none;'); b.innerHTML='<div style="position:relative;width:22px;height:8px;animation:birdFlap '+(.5+br()*.4)+'s ease-in-out infinite;"><div style="position:absolute;left:0;top:0;width:12px;height:3px;background:#3a2a3e;border-radius:3px;transform:rotate(20deg);transform-origin:right;"></div><div style="position:absolute;right:0;top:0;width:12px;height:3px;background:#3a2a3e;border-radius:3px;transform:rotate(-20deg);transform-origin:left;"></div></div>'; sky.appendChild(b); }
+    for(let i=0;i<(this.lite?2:4);i++){ const top=(9+br()*30),dur=(32+br()*26),del=(-br()*44),sc=.6+br()*.7; const b=this.el('div','position:absolute;left:0;top:'+top+'%;transform:translateX(-12vw) scale('+sc+');animation:birdFly '+dur+'s linear infinite;animation-delay:'+del+'s;pointer-events:none;'); b.innerHTML='<div style="position:relative;width:22px;height:8px;animation:birdFlap '+(.5+br()*.4)+'s ease-in-out infinite;"><div style="position:absolute;left:0;top:0;width:12px;height:3px;background:#3a2a3e;border-radius:3px;transform:rotate(20deg);transform-origin:right;"></div><div style="position:absolute;right:0;top:0;width:12px;height:3px;background:#3a2a3e;border-radius:3px;transform:rotate(-20deg);transform-origin:left;"></div></div>'; sky.appendChild(b); }
     const mr=this.rng(44);
-    for(let i=0;i<14;i++){ const m=this.el('div','position:absolute;left:'+(mr()*100)+'%;top:'+(42+mr()*44)+'%;width:'+(2+mr()*2)+'px;height:'+(2+mr()*2)+'px;border-radius:50%;background:#ffe9b0;box-shadow:0 0 6px #ffd98a;opacity:0;animation:mote '+(6+mr()*6)+'s ease-in-out infinite;animation-delay:'+(mr()*6)+'s;pointer-events:none;'); sky.appendChild(m); }
+    for(let i=0;i<(this.lite?5:14);i++){ const m=this.el('div','position:absolute;left:'+(mr()*100)+'%;top:'+(42+mr()*44)+'%;width:'+(2+mr()*2)+'px;height:'+(2+mr()*2)+'px;border-radius:50%;background:#ffe9b0;box-shadow:0 0 6px #ffd98a;opacity:0;animation:mote '+(6+mr()*6)+'s ease-in-out infinite;animation-delay:'+(mr()*6)+'s;pointer-events:none;'); sky.appendChild(m); }
     // stars in dedicated top layer
     this.stars=this.q('[data-stars]'); const r=this.rng(7);
-    for(let i=0;i<80;i++){ const sz=r()<.8?2:3; const s=this.el('div','position:absolute;background:#fff;width:'+sz+'px;height:'+sz+'px;left:'+(r()*100)+'%;top:'+(r()*60)+'%;animation:twinkle '+(1.5+r()*2.5)+'s ease-in-out infinite;animation-delay:'+(r()*3)+'s;'); this.stars.appendChild(s); }
+    for(let i=0;i<(this.lite?34:80);i++){ const sz=r()<.8?2:3; const s=this.el('div','position:absolute;background:#fff;width:'+sz+'px;height:'+sz+'px;left:'+(r()*100)+'%;top:'+(r()*60)+'%;animation:twinkle '+(1.5+r()*2.5)+'s ease-in-out infinite;animation-delay:'+(r()*3)+'s;'); this.stars.appendChild(s); }
     this.farHills=this.makeHills('#5a3a6e','#4a2f5c',180); this.farHills.style.transition='filter 1.1s ease'; this.q('[data-layer="far"]').appendChild(this.farHills);
     this.nearHills=this.makeHills('#6e4a4a','#5a3a3a',150); this.nearHills.style.transition='filter 1.1s ease'; this.q('[data-layer="near"]').appendChild(this.nearHills);
   }
@@ -329,8 +338,8 @@ class Game {
     this.ground.appendChild(this.el('div','position:absolute;left:0;top:32px;width:'+this.worldW+'px;height:34px;background:repeating-linear-gradient(90deg,#6e4a30,#6e4a30 26px,#79553a 26px,#79553a 52px);opacity:.4;'));
     w.appendChild(this.ground);
 
-    const r=this.rng(99);
-    for(let x=40;x<this.worldW;x+=52){
+    const r=this.rng(99); const gstep=this.lite?116:52;
+    for(let x=40;x<this.worldW;x+=gstep){
       const t=r(); const base='#6f9a40',mid='#85ad52',lt='#a6c869';
       const h1=9+r()*7,h2=14+r()*11,h3=8+r()*7;
       const tuft=this.el('div','position:absolute;left:'+x+'px;bottom:'+(this.G-4)+'px;z-index:2;transform-origin:bottom center;animation:sway '+(2.4+r()*2)+'s ease-in-out infinite;animation-delay:'+(r()*2)+'s;');
@@ -341,7 +350,7 @@ class Game {
         +'<div style="position:absolute;left:17px;bottom:0;width:5px;height:'+h3+'px;background:'+base+';border-radius:3px 3px 0 0;transform:rotate(20deg);transform-origin:bottom;"></div>'
         +'</div>';
       w.appendChild(tuft);
-      if(t>0.82){ const fc=r()<.34?'#ff9d6e':(r()<.5?'#ffd166':'#e88ad0');
+      if(!this.lite && t>0.82){ const fc=r()<.34?'#ff9d6e':(r()<.5?'#ffd166':'#e88ad0');
         const f=this.el('div','position:absolute;left:'+(x+5)+'px;bottom:'+(this.G-4)+'px;z-index:2;transform-origin:bottom;animation:sway '+(2.6+r()*1.6)+'s ease-in-out infinite;animation-delay:'+(r()*2)+'s;');
         const fh=14+r()*10;
         f.innerHTML='<div style="position:relative;width:14px;height:'+(fh+14)+'px;">'
@@ -353,8 +362,8 @@ class Game {
         w.appendChild(f);
       }
     }
-    const tr=this.rng(55);
-    for(let i=0;i<26;i++){ const x=160+tr()*(this.worldW-300); this.makeTree(w,x,tr); }
+    const tr=this.rng(55); const nT=this.lite?12:26;
+    for(let i=0;i<nT;i++){ const x=160+tr()*(this.worldW-300); this.makeTree(w,x,tr); }
     for(let x=560;x<this.worldW;x+=620){ this.makeLamp(w,x); }
     this.ZONES.forEach(z=>{ w.appendChild(this.el('div','position:absolute;left:'+z[1]+'px;top:78px;transform:translateX(-50%);font-family:\'Press Start 2P\';font-size:34px;color:#fff;opacity:.07;white-space:nowrap;letter-spacing:4px;',z[0])); });
 
@@ -531,6 +540,13 @@ class Game {
   // Render the world at a logical resolution and scale it to fill the device.
   // Desktop & tall (portrait) screens render 1:1; short/landscape screens zoom
   // out so the full scene (tall buildings included) always fits vertically.
+  applyLite(){
+    // remove the per-frame GPU killers: full-screen blend overlays + scanlines.
+    const crt=this.q('[data-crt]'); if(crt) crt.style.display='none';
+    const tint=this.q('[data-tint]'); if(tint) tint.style.display='none';
+    // night darkening kept, but via cheap normal-alpha instead of a multiply blend.
+    const night=this.q('[data-night]'); if(night){ night.style.mixBlendMode='normal'; night.style.background='#0a0820'; }
+  }
   applyScale(){
     const DH=620; // logical scene height that frames the world nicely
     const w=window.innerWidth, h=window.innerHeight;
@@ -686,7 +702,7 @@ class Game {
   applyBiome(i,instant){
     this._biome=i; const b=this.BIOMES[i];
     this.root.style.background=b[0];
-    this.farHills.style.filter=b[1]; this.nearHills.style.filter=b[1];
+    const hf=this.lite?'none':b[1]; this.farHills.style.filter=hf; this.nearHills.style.filter=hf;
     this.ground.style.background='linear-gradient('+b[2][0]+' 0%,'+b[2][1]+' 14%,'+b[2][2]+' 30%,'+b[2][3]+' 100%)';
     this.q('[data-tint]').style.background=b[3];
     this.updateStars();
